@@ -1,7 +1,7 @@
 package main
 
 import (
-	"component/component"
+	"storage/component"
 
 	"github.com/x-research-team/contract"
 )

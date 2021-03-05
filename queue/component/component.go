@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	name  = "component_name"
-	route = "route_route"
+	name  = "Queue"
+	route = "queue"
 )
 
 func init() {
