@@ -5,16 +5,15 @@ import (
 	"runtime"
 	"time"
 
-	"entgo.io/ent/entc/integration/ent"
-	"github.com/google/uuid"
-
 	"github.com/x-research-team/bus"
 	"github.com/x-research-team/contract"
+
+	"github.com/google/uuid"
 )
 
 const (
-	name  = "Storage"
-	route = "storage"
+	name  = "Console"
+	route = "console"
 )
 
 func init() {
@@ -29,9 +28,7 @@ type Component struct {
 	trunk      contract.ISignalBus
 	route      string
 	uuid       string
-
-	client *ent.Client
-	fails  []error
+	fails      []error
 }
 
 // New Создать экземпляр компонента сервиса биллинга
@@ -96,7 +93,6 @@ func (component *Component) Run() error {
 		case data := <-component.bus:
 			fmt.Printf("%s\n", data)
 		default:
-			bus.Debug <- component.client.Schema
 			continue
 		}
 	}
