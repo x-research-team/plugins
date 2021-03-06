@@ -30,7 +30,7 @@ type Component struct {
 	route      string
 	uuid       string
 
-	client *ent.Client
+	client map[string]*ent.Client
 	fails  []error
 }
 
@@ -41,6 +41,7 @@ func New(opts ...contract.ComponentModule) contract.KernelModule {
 		components: make(map[string]contract.IComponent),
 		route:      route,
 		trunk:      make(contract.ISignalBus),
+		client:     make(map[string]*ent.Client),
 	}
 	for _, o := range opts {
 		o(component)
@@ -96,7 +97,6 @@ func (component *Component) Run() error {
 		case data := <-component.bus:
 			fmt.Printf("%s\n", data)
 		default:
-			bus.Debug <- component.client.Schema
 			continue
 		}
 	}

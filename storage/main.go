@@ -2,6 +2,7 @@ package main
 
 import (
 	"storage/component"
+	"storage/component/dsn"
 
 	"github.com/x-research-team/contract"
 )
@@ -9,7 +10,7 @@ import (
 // Init Load plugin with all components
 func Init() contract.KernelModule {
 	return component.New(
-		component.ConnectTo("Server=localhost;Database=kernel;Uid=root;Pwd=root;"),
+		component.ConnectTo(dsn.Parse()),
 	)
 }
 
