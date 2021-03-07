@@ -1,10 +1,10 @@
 package component
 
 import (
+	"storage/component/dsn"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/entc/integration/ent"
 	"github.com/x-research-team/contract"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -12,11 +12,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func ConnectTo(dsn map[string]string) contract.ComponentModule {
+func ConnectTo(dsn map[string]dsn.IDataBaseConfig) contract.ComponentModule {
 	return func(component contract.IComponent) {
 		c := component.(*Component)
 		for k, v := range dsn {
-			drv, err := sql.Open(k, v)
+			drv, err := sql.Open(v.GetDialect(), v.GetDSN())
 			if err != nil {
 				c.fails = append(c.fails, err)
 				return
@@ -29,7 +29,7 @@ func ConnectTo(dsn map[string]string) contract.ComponentModule {
 				c.fails = append(c.fails, err)
 				return
 			}
-			c.client[k] = ent.NewClient(ent.Driver(drv))
+			c.client[k] = db
 		}
 		component = c
 	}

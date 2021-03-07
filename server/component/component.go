@@ -1,22 +1,19 @@
 package component
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"runtime"
-	"strings"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/x-research-team/bus"
 	"github.com/x-research-team/contract"
+
+	"github.com/google/uuid"
 )
 
 const (
-	name  = "Storage"
-	route = "storage"
+	name  = "component_name"
+	route = "route_route"
 )
 
 func init() {
@@ -31,9 +28,7 @@ type Component struct {
 	trunk      contract.ISignalBus
 	route      string
 	uuid       string
-
-	client map[string]*sql.DB
-	fails  []error
+	fails      []error
 }
 
 // New Создать экземпляр компонента сервиса биллинга
@@ -43,7 +38,6 @@ func New(opts ...contract.ComponentModule) contract.KernelModule {
 		components: make(map[string]contract.IComponent),
 		route:      route,
 		trunk:      make(contract.ISignalBus),
-		client:     make(map[string]*sql.DB),
 	}
 	for _, o := range opts {
 		o(component)
@@ -98,61 +92,6 @@ func (component *Component) Run() error {
 		select {
 		case data := <-component.bus:
 			fmt.Printf("%s\n", data)
-			command := new(TCommand)
-			if err := json.Unmarshal(data, &command); err != nil {
-				bus.Error <- err
-				continue
-			}
-			tx, err := component.client[command.Service].Begin()
-			if err != nil {
-				bus.Error <- err
-				continue
-			}
-			stmt, err := tx.Prepare(command.SQL)
-			if err != nil {
-				if err := tx.Rollback(); err != nil {
-					bus.Error <- err
-					continue
-				}
-				bus.Error <- err
-				continue
-			}
-			if strings.HasPrefix(strings.ToLower(command.SQL), "select") {
-				rows, err := stmt.Query()
-				if err != nil {
-					if err := tx.Rollback(); err != nil {
-						bus.Error <- err
-						continue
-					}
-					bus.Error <- err
-					continue
-				}
-				v := make([]map[string]interface{}, 0)
-				if err := rows.Scan(&v); err != nil {
-					if err := tx.Rollback(); err != nil {
-						bus.Error <- err
-						continue
-					}
-					bus.Error <- err
-					continue
-				}
-				buffer, err := json.Marshal(v)
-				fmt.Println(string(buffer))
-			} else {
-				_, err := stmt.Exec()
-				if err != nil {
-					if err := tx.Rollback(); err != nil {
-						bus.Error <- err
-						continue
-					}
-					bus.Error <- err
-					continue
-				}
-			}
-			if err := tx.Commit(); err != nil {
-				bus.Error <- err
-				continue
-			}
 		default:
 			continue
 		}
@@ -166,7 +105,6 @@ func (component *Component) Write(message contract.IMessage) error {
 		return nil
 	}
 	bus.Debug <- fmt.Sprintf("%#v", message)
-	component.bus <- []byte(message.Data())
 	return nil
 }
 
