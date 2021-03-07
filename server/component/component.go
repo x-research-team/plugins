@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/x-research-team/bus"
 	"github.com/x-research-team/contract"
 
@@ -12,8 +14,8 @@ import (
 )
 
 const (
-	name  = "component_name"
-	route = "route_route"
+	name  = "Server"
+	route = "server"
 )
 
 func init() {
@@ -29,6 +31,8 @@ type Component struct {
 	route      string
 	uuid       string
 	fails      []error
+
+	engine *gin.Engine
 }
 
 // New Создать экземпляр компонента сервиса биллинга
@@ -87,6 +91,8 @@ func (component *Component) Run() error {
 	bus.Info <- fmt.Sprintf("[%v] component started", name)
 
 	component.uuid = uuid.New().String()
+
+	go component.engine.Run("0.0.0.0:43001")
 
 	for {
 		select {

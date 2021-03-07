@@ -103,6 +103,14 @@ func (component *Component) Run() error {
 				bus.Error <- err
 				continue
 			}
+			if command.Service == "" {
+				bus.Error <- fmt.Errorf("unknown service")
+				continue
+			}
+			if command.SQL == "" {
+				bus.Error <- fmt.Errorf("missing sql raw")
+				continue
+			}
 			tx, err := component.client[command.Service].Begin()
 			if err != nil {
 				bus.Error <- err
