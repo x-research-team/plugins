@@ -98,8 +98,13 @@ func (component *Component) Run() error {
 		select {
 		case data := <-component.bus:
 			fmt.Printf("%s\n", data)
+			m := new(KernelMessage)
+			if err := json.Unmarshal(data, &m); err != nil {
+				bus.Error <- err
+				continue
+			}
 			command := new(TCommand)
-			if err := json.Unmarshal(data, &command); err != nil {
+			if err := json.Unmarshal(m.Data, &command); err != nil {
 				bus.Error <- err
 				continue
 			}
@@ -118,42 +123,30 @@ func (component *Component) Run() error {
 			}
 			stmt, err := tx.Prepare(command.SQL)
 			if err != nil {
-				if err := tx.Rollback(); err != nil {
-					bus.Error <- err
-					continue
-				}
-				bus.Error <- err
+				component.rollback(tx, err)
 				continue
 			}
 			if strings.HasPrefix(strings.ToLower(command.SQL), "select") {
 				rows, err := stmt.Query()
 				if err != nil {
-					if err := tx.Rollback(); err != nil {
-						bus.Error <- err
-						continue
-					}
-					bus.Error <- err
+					component.rollback(tx, err)
 					continue
 				}
 				v := make([]map[string]interface{}, 0)
 				if err := rows.Scan(&v); err != nil {
-					if err := tx.Rollback(); err != nil {
-						bus.Error <- err
-						continue
-					}
-					bus.Error <- err
+					component.rollback(tx, err)
 					continue
 				}
 				buffer, err := json.Marshal(v)
+				if err != nil {
+					component.rollback(tx, err)
+					continue
+				}
 				fmt.Println(string(buffer))
 			} else {
 				_, err := stmt.Exec()
 				if err != nil {
-					if err := tx.Rollback(); err != nil {
-						bus.Error <- err
-						continue
-					}
-					bus.Error <- err
+					component.rollback(tx, err)
 					continue
 				}
 			}
@@ -169,12 +162,24 @@ func (component *Component) Run() error {
 
 func (component *Component) Route() string { return component.route }
 
+type KernelMessage struct {
+	ID   uuid.UUID
+	Data []byte
+}
+
 func (component *Component) Write(message contract.IMessage) error {
 	if message.Route() != component.Route() {
 		return nil
 	}
 	bus.Debug <- fmt.Sprintf("%#v", message)
-	component.bus <- []byte(message.Data())
+	buffer, err := json.Marshal(&KernelMessage{
+		ID:   message.ID(),
+		Data: []byte(message.Data()),
+	})
+	if err != nil {
+		return err
+	}
+	component.bus <- buffer
 	return nil
 }
 
@@ -228,4 +233,12 @@ func (component *Component) Sync(with string) error {
 
 func (component *Component) Backup(to string) error {
 	return nil
+}
+
+func (component *Component) rollback(tx *sql.Tx, err error) {
+	if err := tx.Rollback(); err != nil {
+		bus.Error <- err
+		return
+	}
+	bus.Error <- err
 }
