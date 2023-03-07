@@ -14,8 +14,7 @@ require (
 	github.com/ugorji/go v1.2.4 // indirect
 	github.com/x-research-team/bus v0.0.0-20210307104915-782cf8ba0c40
 	github.com/x-research-team/contract v0.0.0-20210307104512-9f60da0c3706
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
-	golang.org/x/sys v0.0.0-20210305230114-8fe3ee5dd75b // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
